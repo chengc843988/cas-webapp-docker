@@ -54,11 +54,16 @@ COPY bin/*.* cas-overlay/bin/
 COPY etc/cas/config/*.* /cas-overlay/etc/cas/config/
 COPY etc/cas/services/*.* /cas-overlay/etc/cas/services/
 
-RUN chmod -R 750 cas-overlay/bin \
-    && chmod 750 cas-overlay/mvnw \
-    && chmod 750 cas-overlay/build.sh \
-    && chmod 750 /opt/jre-home/bin/java;
+#RUN chmod -R 750 cas-overlay/bin \
+#    && chmod 750 cas-overlay/mvnw \
+#    && chmod 750 cas-overlay/build.sh \
+#    && chmod 750 /opt/jre-home/bin/java;
 
+RUN chmod -R 750 cas-overlay/bin \
+    && chmod 750 cas-overlay/gradlew \
+    && chmod 750 cas-overlay/gradlew.bat \
+    && chmod 750 /opt/jre-home/bin/java;    
+    
 # Enable if you are using Oracle Java
 #	&& chmod 750 /opt/jre-home/jre/bin/java;
 
@@ -69,6 +74,7 @@ WORKDIR /cas-overlay
 ENV JAVA_HOME /opt/jre-home
 ENV PATH $PATH:$JAVA_HOME/bin:.
 
-RUN ./mvnw clean package -T 10 && rm -rf /root/.m2
+# RUN ./mvnw clean package -T 10 && rm -rf /root/.m2
+RUN ./gradlew clean build
 
 CMD ["/cas-overlay/bin/run-cas.sh"]
