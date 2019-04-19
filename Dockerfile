@@ -8,24 +8,42 @@ ARG cas_version
 RUN yum -y install wget tar unzip git \
     && yum -y clean all
 
+# change JDK to 12, 
+# 1. change zulu version no
+# 2. change java version
+# 3. zulu's hash code!
+# 4. change the jre's home
+#    java_version=8.0.131; \
+#    zulu_version=8.21.0.1; \
+#    java_hash=1931ed3beedee0b16fb7fd37e069b162; \
+
+
 # Download Azul Java, verify the hash, and install \
 RUN set -x; \
-    java_version=8.0.131; \
-    zulu_version=8.21.0.1; \
-    java_hash=1931ed3beedee0b16fb7fd37e069b162; \
+    zulu_version=12.2.3-ca; \
+    java_version=12.0.1; \
+    java_hash=772a8d0b5f2e610d9061ed448c9221a8; \
     cd / \
-    && wget http://cdn.azul.com/zulu/bin/zulu$zulu_version-jdk$java_version-linux_x64.tar.gz \
+    && wget https://cdn.azul.com/zulu/bin/zulu$zulu_version-jdk$java_version-linux_x64.tar.gz \
     && echo "$java_hash  zulu$zulu_version-jdk$java_version-linux_x64.tar.gz" | md5sum -c - \
     && tar -zxvf zulu$zulu_version-jdk$java_version-linux_x64.tar.gz -C /opt \
     && rm zulu$zulu_version-jdk$java_version-linux_x64.tar.gz \
-    && ln -s /opt/zulu$zulu_version-jdk$java_version-linux_x64/jre/ /opt/jre-home;
+    && ln -s /opt/zulu$zulu_version-jdk$java_version-linux_x64/ /opt/jre-home;
+
+# make sure where zulu's installed!!
+# JDK12: is moved to /opt/zulu...../
+# JDK1.8: is in /opt/zulu/jre
+RUN whereis java; ls -ald /opt/
+
+# maybe zulu has no security directory!
+RUN [[ -d /opt/jre-home/lib/security ]] || mkdir -p /opt/jre-home/lib/security/
+
 
 RUN cd / \
 	&& wget http://cdn.azul.com/zcek/bin/ZuluJCEPolicies.zip \
     && unzip ZuluJCEPolicies.zip \
     && mv -f ZuluJCEPolicies/*.jar /opt/jre-home/lib/security \
     && rm ZuluJCEPolicies.zip;
-
 
 # Set up Oracle Java properties
 # RUN set -x; \
@@ -59,6 +77,7 @@ COPY etc/cas/services/*.* /cas-overlay/etc/cas/services/
 #    && chmod 750 cas-overlay/build.sh \
 #    && chmod 750 /opt/jre-home/bin/java;
 
+# chmod to 755 or 750
 RUN chmod -R 750 cas-overlay/bin \
     && chmod 750 cas-overlay/gradlew \
     && chmod 750 cas-overlay/gradlew.bat \
@@ -76,5 +95,8 @@ ENV PATH $PATH:$JAVA_HOME/bin:.
 
 # RUN ./mvnw clean package -T 10 && rm -rf /root/.m2
 RUN ./gradlew clean build
+
+# some security issue, if not run as root
+# RUN chmod 0777 /cas-overlay
 
 CMD ["/cas-overlay/bin/run-cas.sh"]
